@@ -1,0 +1,624 @@
+{
+  "name": "Main copy",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -320,
+        -208
+      ],
+      "id": "aaa73d9b-cf16-4274-80c0-b0a829ed741f",
+      "name": "Telegram Trigger",
+      "webhookId": "1b6531fe-b9bf-430c-aaa3-14f14dfd6a41",
+      "credentials": {
+        "telegramApi": {
+          "id": "xmKFdEgaeNBOPi0i",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.message.text }}",
+                    "rightValue": "/start",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "e006776e-ff4a-4923-93a5-a8ca9fdce97f"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "start"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "a646f17b-6a2a-4874-a38c-32aa4b619aa7",
+                    "leftValue": "={{ $json.message.voice.file_id }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "exists",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "voice"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "da3eac82-6c61-4cdf-8ac5-b73d35b768a3",
+                    "leftValue": "={{ $json.message.text }}",
+                    "rightValue": "/start",
+                    "operator": {
+                      "type": "string",
+                      "operation": "notEquals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "text"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -96,
+        -224
+      ],
+      "id": "35a7710d-a202-45fa-9046-e8bec571f14c",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "Hi! I'm your task management assistant. \nYou can write tasks or send a voice message",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        128,
+        -400
+      ],
+      "id": "fbb4f92a-e7f5-43f0-ac0b-0c1ad0f31431",
+      "name": "Send a text message",
+      "webhookId": "6e690c77-2be7-4051-9cb1-ed5f00fad243",
+      "credentials": {
+        "telegramApi": {
+          "id": "xmKFdEgaeNBOPi0i",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $json.message.voice.file_id }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        128,
+        -208
+      ],
+      "id": "8044fc8c-08b3-4586-bb99-a6d390f90ddf",
+      "name": "Get a file",
+      "webhookId": "5b25e027-d4b5-4fd2-add5-8367e8915e9c",
+      "credentials": {
+        "telegramApi": {
+          "id": "xmKFdEgaeNBOPi0i",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "operation": "translate",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [
+        352,
+        -208
+      ],
+      "id": "15b62cb5-731b-4fdf-9975-f7a3aef22781",
+      "name": "Translate a recording"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2c754700-d115-4c59-bb2c-034115a45b7f",
+              "name": "text",
+              "value": "={{ $json.text }}{{ $('Telegram Trigger').item.json.message.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        576,
+        -144
+      ],
+      "id": "66d80102-cc0a-452e-baed-5ce7302b14d8",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.text }}",
+        "options": {
+          "systemMessage": "=You are a personal planner. You help me manage my time, create tasks, clarify durations, create schedules, remind me of events, and record task completion.\n\nYou have direct access to:\n- Google Calendar Tool - use this to create, update, search, and delete calendar events\n- Todoist Tool - use this to manage tasks in Todoist\n\nWhen I send you requests:\n- For calendar events (meetings, appointments, schedules) - use the Google Calendar Tool directly\n- For tasks (to-dos, reminders, action items) - use the Todoist tool\n\nWhen asked to check tasks for the day, ALWAYS use BOTH tools: 1) Todoist tool to get today's tasks, 2) Google Calendar tool to get today's events. Then provide a motivational morning message listing what's planned for the day.\n\nImportant: When creating calendar events, make sure to:\n- Set clear start and end times\n- Include descriptive titles\n- Add relevant details in the description\n\nYou answer me in a Telegram bot, so your answers must match the formatting specifically for Telegram (Use bold, italics, and underlines when needed).\nThe format of communication with me is simple, like with a friend.\n\nRemember:\n- I store tasks in Todoist\n- And plans in Google Calendar\n\nI will ask you to plan my day, effectively distribute the workload across tasks, I will send you my thoughts, and you should communicate with me like my friend-assistant.\n\nCurrent date and time: {{ new Date().toLocaleString(\"sv-SE\", { timeZone: \"Asia/Jerusalem\" }).replace(\" \", \"T\") }}\n\nIMPORTANT: Keep responses SHORT and FRIENDLY (3-4 sentences max). Use simple text without complex markdown. Use emojis when appropriate. Only include essential information."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        928,
+        -48
+      ],
+      "id": "65935568-0636-4453-b2ad-4489559853c6",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-5-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        800,
+        192
+      ],
+      "id": "6dd9c597-1686-4490-b3b3-7bedd6012854",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "wcUOZtrqnSSwcpgv",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{ $json.output }}",
+        "additionalFields": {
+          "appendAttribution": true,
+          "parse_mode": "Markdown"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1392,
+        -48
+      ],
+      "id": "c2544405-f604-44fb-931a-9fd6b76866ef",
+      "name": "Send a text message1",
+      "webhookId": "6de62993-7d04-4332-9470-9b9e417514ef",
+      "credentials": {
+        "telegramApi": {
+          "id": "xmKFdEgaeNBOPi0i",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "description": "Employee in charge of Todoist",
+        "workflowId": {
+          "__rl": true,
+          "value": "m2nHpR2PwYMqPH5i",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/m2nHpR2PwYMqPH5i",
+          "cachedResultName": "Todoist"
+        },
+        "workflowInputs": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        1056,
+        192
+      ],
+      "id": "6127dbb2-26f5-4987-a0d5-fec211dd7d22",
+      "name": "Todoist"
+    },
+    {
+      "parameters": {
+        "description": "Employee in charge of Google Calendar - use this to create, update, delete, and search calendar events",
+        "workflowId": {
+          "__rl": true,
+          "value": "yRqd0xPnv7KM8RHg",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/yRqd0xPnv7KM8RHg",
+          "cachedResultName": "Calendar"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "id": "05ae8e8a-0916-4d39-8bde-09a1e5959db2",
+      "name": "Google Calendar",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        1248,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "2",
+        "contextWindowLength": 500
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        928,
+        192
+      ],
+      "id": "ebe9fde0-c6d4-47c9-b3b7-6e404c1981a0",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "fcff3843-1cc5-4381-9f7b-cfa4a28eb1f5",
+              "name": "text",
+              "value": "Доброе утро! Проверь мои задачи на сегодня в Todoist и события в календаре. Пожелай мне доброго утра и мотивируй меня на продуктивный день, перечислив что меня ждёт сегодня.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        576,
+        112
+      ],
+      "id": "7a7d4a92-2363-4a34-8b46-8834298ca039",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "id-1",
+              "name": "text",
+              "value": "This is an automatic message: it's 9 a.m., check the tasks in the user's calendar, wish them a good morning, and tell them your upcoming plans for the day, specifying whether anything needs to be changed. The message should cheer you up and motivate you to have a productive day",
+              "type": "string"
+            },
+            {
+              "id": "id-2",
+              "name": "text",
+              "value": "={{ $json.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "d26e8855-bb5a-45b3-8b72-0e30d2037d03",
+      "name": "Set Chat ID for Schedule",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -336,
+        656
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{ $json.output }}",
+        "additionalFields": {}
+      },
+      "id": "e7db8462-de5f-44f2-86b0-ebd14de3ccc3",
+      "name": "Send Scheduled Message",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -112,
+        432
+      ],
+      "webhookId": "e16e5175-f38a-4b0e-b2a4-283cc524f52d"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "id-1",
+              "leftValue": "={{ $('Telegram Trigger').isExecuted }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "bca6aa0c-8ced-4c94-b958-7e941ee848d8",
+      "name": "Check Trigger Source",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -336,
+        432
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get a file",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a file": {
+      "main": [
+        [
+          {
+            "node": "Translate a recording",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Translate a recording": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Check Trigger Source",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Todoist": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Calendar": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message1": {
+      "main": [
+        []
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Set Chat ID for Schedule",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Chat ID for Schedule": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Trigger Source": {
+      "main": [
+        [
+          {
+            "node": "Send a text message1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Scheduled Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "8155f98a-5f8f-443f-8ee1-e20a2b8aedaa",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "c6858d15cd27f50da4f3e40afb89802e90bdafcf59ac0b29c8a64a3e12233fd3"
+  },
+  "id": "37EBT4Zyn8Brmb8R",
+  "tags": []
+}
