@@ -1,0 +1,668 @@
+{
+  "name": "master temp",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -1248,
+        -144
+      ],
+      "id": "2a18c05a-87bc-4633-9a5f-5dbd46c11978",
+      "name": "When chat message received",
+      "webhookId": "53855737-668e-4c85-aa58-19f01d6b2481"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('When chat message received').item.json.chatInput }}",
+        "options": {
+          "systemMessage": "=You are a manager for a private handyman service. Your goal is to collect client information and create an order.\n\nIMPORTANT MEMORY RULES:\n- You have access to conversation history through memory\n- ALWAYS review what information you already collected before asking questions\n- NEVER ask for information the client already provided\n- Track what you still need to collect\n\nREQUIRED INFORMATION (collect in this order):\n1. Client name\n2. Phone number  \n3. Service address\n4. Type of service needed\n5. Preferred date and time\n\nSTEP-BY-STEP PROCESS:\n\nSTEP 1 - ANSWER QUESTIONS:\n- If client asks about services, prices, hours, areas, warranty, or payment - use the knowledge base tool (Supabase Vector Store)\n- Provide clear answers based on knowledge base\n\nSTEP 2 - COLLECT INFORMATION:\n- Ask for ONE piece of missing information at a time\n- Check memory - if client already provided it, DON'T ask again\n- After each answer, acknowledge it and ask for the NEXT missing item\n- Order: name → phone → address → service type → date/time\n\nSTEP 3 - CHECK CALENDAR:\n- When client suggests a date/time, use Get many events in Google Calendar tool\n- Set After parameter to suggested date start (e.g., 2024-01-15T00:00:00)\n- Set Before parameter to suggested date end (e.g., 2024-01-15T23:59:59)\n- If time slot is busy, suggest alternative\n- If available, confirm the time\n\nSTEP 4 - SAVE ORDER:\n- ONLY after you have ALL 5 pieces of information\n- Use save_order tool with all collected data\n- Provide: client_name, phone, address, service_type, date (ISO format like 2024-01-15), time (like 14:00)\n- This will save data to both Supabase database and Google Sheets\n\nSTEP 5 - CREATE CALENDAR EVENT:\n- IMMEDIATELY after successful save_order\n- Use Create an event in Google Calendar tool\n- Set Start: date + time in ISO format (e.g., 2024-01-15T14:00:00)\n- Set End: start time + 2 hours (e.g., 2024-01-15T16:00:00)\n- Set Summary: Service type + client name (e.g., Ремонт крана - Иван Петров)\n- Set Description: Full details including name, phone, address, service type\n\nSTEP 6 - FINAL CONFIRMATION:\n- After calendar event is created, send final message:\nОтлично! Ваш заказ оформлен:\n- Услуга: [service type]\n- Дата и время: [date and time]\n- Адрес: [address]\n\nВсе данные внесены в базу данных Supabase, Google Sheets и календарь. Ожидайте специалиста в назначенное время. Мастер свяжется с вами по телефону [phone] для подтверждения.\n\nCommunicate in Russian. Be friendly and professional.\n\nCurrent date/time: {{ new Date().toLocaleString(\"sv-SE\", { timeZone: \"Asia/Jerusalem\" }).replace(\" \", \"T\") }}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -656,
+        -352
+      ],
+      "id": "448e35d1-d274-4222-93cb-5b1bb6f06edd",
+      "name": "AI Agent1"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        -1024,
+        -128
+      ],
+      "id": "f18c2a42-c818-474b-8916-20309153eb11",
+      "name": "OpenAI Chat Model1",
+      "credentials": {
+        "openAiApi": {
+          "id": "eJsxth3jJD1AoDOQ",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('When chat message received').item.json.sessionId }}",
+        "contextWindowLength": 50
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        -896,
+        -128
+      ],
+      "id": "df48d772-cf3a-4785-b67e-1c32a342a73b",
+      "name": "Simple Memory1"
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "",
+          "mode": "id"
+        },
+        "options": {
+          "googleFileConversion": {
+            "conversion": {
+              "sheetsToFormat": "application/pdf"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -1024,
+        496
+      ],
+      "id": "2eb39d15-bea8-4079-a566-35a33809cc86",
+      "name": "Download file"
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "tableName": {
+          "__rl": true,
+          "value": "master",
+          "mode": "list",
+          "cachedResultName": "master"
+        },
+        "options": {
+          "queryName": "match_master"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1.3,
+      "position": [
+        -768,
+        496
+      ],
+      "id": "4f66cea3-0adb-4204-a39e-94276411637d",
+      "name": "Supabase Vector Store"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -800,
+        720
+      ],
+      "id": "87ebdffa-9c5b-4f1f-8737-a1f4f1757f1e",
+      "name": "Embeddings OpenAI"
+    },
+    {
+      "parameters": {
+        "textSplittingMode": "custom",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        -672,
+        720
+      ],
+      "id": "6e4996eb-2120-4fe4-b1e3-9b8a4cd289e0",
+      "name": "Default Data Loader"
+    },
+    {
+      "parameters": {
+        "chunkSize": 400,
+        "chunkOverlap": 50,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        -592,
+        928
+      ],
+      "id": "82ae997f-62ba-45f9-a85e-119f048d2e34",
+      "name": "Recursive Character Text Splitter"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1248,
+        496
+      ],
+      "id": "01fa347f-2dd4-4588-a202-a13b65d80226",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "Knowledge base tool for retrieving information about handyman services, prices, working hours, service areas, warranty terms, payment methods, and other business information. Use this tool whenever you need to answer questions about services, costs, or business policies. Query this tool with natural language questions.",
+        "tableName": {
+          "__rl": true,
+          "value": "master",
+          "mode": "list",
+          "cachedResultName": "master"
+        },
+        "topK": 7,
+        "options": {
+          "queryName": "match_master"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1.3,
+      "position": [
+        -768,
+        -128
+      ],
+      "id": "eeced36b-5bf6-4bc9-98b6-3b14f0f38cc3",
+      "name": "Supabase Vector Store1",
+      "credentials": {
+        "supabaseApi": {
+          "id": "fyeeu60INgafUI5S",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -688,
+        80
+      ],
+      "id": "0e121b88-4955-4005-af07-2e97ae566dbd",
+      "name": "Embeddings OpenAI1",
+      "credentials": {
+        "openAiApi": {
+          "id": "eJsxth3jJD1AoDOQ",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Tool for checking the handyman calendar availability. Use this tool when you need to check if the handyman is available on specific dates. Provide After (start date/time) and Before (end date/time) parameters in ISO 8601 format (YYYY-MM-DDTHH:MM:SS). Returns list of scheduled events in that time range.",
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "lisuenii@gmail.com",
+          "mode": "list",
+          "cachedResultName": "lisuenii@gmail.com"
+        },
+        "timeMin": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('After', ``, 'string') }}",
+        "timeMax": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Before', ``, 'string') }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        -480,
+        -128
+      ],
+      "id": "f4c4f50d-1b0f-4117-9104-37f02521885c",
+      "name": "Get many events in Google Calendar",
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "l0bPtkkm8nOTYB9z",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Tool for creating a calendar event for confirmed orders. Use this ONLY after: 1) All client information is collected (name, phone, address), 2) Service type is confirmed, 3) Date and time are agreed with client, 4) Order is saved to database. Provide Start and End times in ISO 8601 format, Summary (brief title), and Description (include client name, phone, address, and service type).",
+        "calendar": {
+          "__rl": true,
+          "value": "lisuenii@gmail.com",
+          "mode": "list",
+          "cachedResultName": "lisuenii@gmail.com"
+        },
+        "start": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Start', ``, 'string') }}",
+        "end": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('End', ``, 'string') }}",
+        "additionalFields": {
+          "description": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Description', `Include the customer's contact information in the description: name, phone number, and address.`, 'string') }}",
+          "summary": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Summary', ``, 'string') }}"
+        }
+      },
+      "type": "n8n-nodes-base.googleCalendarTool",
+      "typeVersion": 1.3,
+      "position": [
+        -352,
+        -128
+      ],
+      "id": "180d2eb6-5e01-4ca5-abe5-fbe557ab958d",
+      "name": "Create an event in Google Calendar"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1ZOx_ipHQkamWZ1N9wizhp163PuJVWzB7FwoGSDj6-vU",
+          "mode": "list",
+          "cachedResultName": "master",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1ZOx_ipHQkamWZ1N9wizhp163PuJVWzB7FwoGSDj6-vU/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1621678284,
+          "mode": "list",
+          "cachedResultName": "Sales_Assistant_Client_Conversation_Handling",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1ZOx_ipHQkamWZ1N9wizhp163PuJVWzB7FwoGSDj6-vU/edit#gid=1621678284"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "ID",
+              "displayName": "ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Situation",
+              "displayName": "Situation",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Instruction",
+              "displayName": "Instruction",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "22400f16-5000-480d-bfec-aa43f8343af4",
+      "name": "Save to Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        432,
+        -144
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "id-1",
+              "name": "client_name",
+              "value": "={{ $json.client_name }}",
+              "type": "string"
+            },
+            {
+              "id": "id-2",
+              "name": "phone",
+              "value": "={{ $json.phone }}",
+              "type": "string"
+            },
+            {
+              "id": "id-3",
+              "name": "address",
+              "value": "={{ $json.address }}",
+              "type": "string"
+            },
+            {
+              "id": "id-4",
+              "name": "service_type",
+              "value": "={{ $json.service_type }}",
+              "type": "string"
+            },
+            {
+              "id": "id-5",
+              "name": "date",
+              "value": "={{ $json.scheduled_date }}",
+              "type": "string"
+            },
+            {
+              "id": "id-6",
+              "name": "time",
+              "value": "={{ $json.scheduled_time }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {
+          "dotNotation": true
+        }
+      },
+      "id": "8b6800b4-cdc7-447d-849d-a97c3c630003",
+      "name": "Extract Order Data",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        208,
+        -144
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "1",
+              "leftValue": "={{ $json.output }}",
+              "rightValue": "save_order",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "95dbf815-4952-4e1e-98bd-973133cb16eb",
+      "name": "Check if Order Saved",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -16,
+        -144
+      ]
+    },
+    {
+      "parameters": {
+        "name": "save_order",
+        "description": "Tool for saving client order information. Use this tool ONLY after you have collected ALL required information: client name, phone number, address, service type, and confirmed date/time. Provide all collected information as parameters: client_name, phone, address, service_type, date, time",
+        "jsCode": "const { client_name, phone, address, service_type, date, time } = $input.item.json;\n\nreturn {\n  client_name,\n  phone,\n  address,\n  service_type,\n  scheduled_date: date,\n  scheduled_time: time,\n  created_at: new Date().toISOString()\n};",
+        "specifyInputSchema": true,
+        "schemaType": "manual",
+        "inputSchema": "{\"type\": \"object\", \"properties\": {\"client_name\": {\"type\": \"string\", \"description\": \"Client full name\"}, \"phone\": {\"type\": \"string\", \"description\": \"Client phone number\"}, \"address\": {\"type\": \"string\", \"description\": \"Service address\"}, \"service_type\": {\"type\": \"string\", \"description\": \"Type of service requested\"}, \"date\": {\"type\": \"string\", \"description\": \"Scheduled date in ISO format\"}, \"time\": {\"type\": \"string\", \"description\": \"Scheduled time\"}}, \"required\": [\"client_name\", \"phone\", \"address\", \"service_type\", \"date\", \"time\"]}"
+      },
+      "id": "e5210066-f98d-4609-97e5-9f016bbfc5d3",
+      "name": "Collect Order Data",
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.1,
+      "position": [
+        -224,
+        -128
+      ]
+    },
+    {
+      "parameters": {
+        "tableId": "orders",
+        "dataToSend": "autoMapInputData"
+      },
+      "id": "e8edb98d-1c35-453d-914d-1756c2db4150",
+      "name": "Save Order to Supabase",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -224,
+        80
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "fyeeu60INgafUI5S",
+          "name": "Supabase account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory1": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download file": {
+      "main": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recursive Character Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Default Data Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Download file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase Vector Store1": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI1": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Supabase Vector Store1",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get many events in Google Calendar": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create an event in Google Calendar": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent1": {
+      "main": [
+        [
+          {
+            "node": "Check if Order Saved",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check if Order Saved": {
+      "main": [
+        [
+          {
+            "node": "Extract Order Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Order Data": {
+      "main": [
+        [
+          {
+            "node": "Save to Google Sheets",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Save Order to Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect Order Data": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "bc9c2514-4fb2-4cfe-bc66-3e9b7cbc2264",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "c6858d15cd27f50da4f3e40afb89802e90bdafcf59ac0b29c8a64a3e12233fd3"
+  },
+  "id": "2InpQ0hVDc9POeYk",
+  "tags": []
+}
