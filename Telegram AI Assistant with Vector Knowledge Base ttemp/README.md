@@ -61,6 +61,6 @@ Set the Binary Property in the Whisper node to data to match the Telegram downlo
 
 Voice/Text Message — Automatically indexes the content into the vector store.
 
-📋 Все цели — Triggers a semantic search to list all current records.
+📋All goals— Triggers a semantic search to list all current records.
 
-✍️ Редактировать — Initiates the interactive editing protocol for existing entries.
+✍️ Рedit — Initiates the interactive editing protocol for existing entries.
