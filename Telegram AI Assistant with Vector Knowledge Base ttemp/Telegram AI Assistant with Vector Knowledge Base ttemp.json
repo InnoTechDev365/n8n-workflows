@@ -1,0 +1,831 @@
+{
+  "name": "Telegram AI Assistant with Vector Knowledge Base ttemp",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {
+          "download": true
+        }
+      },
+      "id": "853745a8-e902-4f49-adc6-ccb69237afe8",
+      "name": "Telegram Bot Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -928,
+        240
+      ],
+      "webhookId": "69ce8efe-cb58-47e1-80e8-6d83d487f477"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.user_input }}",
+        "options": {
+          "systemMessage": "**ROLE**: Executive Knowledge Architect (Your Professional Second Brain)\n\n**MISSION**: \nHelp users capture, organize, and retrieve their knowledge, tasks, and ideas efficiently using the connected Supabase Vector Store.\n\n**CAPABILITIES**:\n1. **CAPTURE**: Save facts, tasks, notes, and ideas from text or voice (Whisper) to the Supabase knowledge base.\n2. **SEARCH**: Retrieve relevant information from stored knowledge using the 'Supabase Vector Store' tool.\n3. **MANAGEMENT**: Provide a structured view of all goals and assist in editing existing records.\n\n**OPERATIONAL PROTOCOLS**:\n- **INTENT ANALYSIS**: Determine if the user wants to SAVE new information or RETRIEVE/EDIT existing data.\n- **SEARCH FIRST**: Always use the 'Supabase Vector Store' tool to check for existing context before providing a final answer.\n- **VIEW ALL (COMMAND)**: If the user clicks \"📋 All goals\", types \"/list\", or asks to see their goals, use the tool to fetch all documents and present them as a clear, numbered list.\n- **EDIT (COMMAND)**: If the user clicks \"✍️Edit\" or expresses a desire to change a record, ask which goal to modify, retrieve it to confirm, and then save the updated version.\n- **ONBOARDING**: If the user is new or asks for help, provide the Quick Start Guide.\n\n**QUICK START GUIDE**:\n- 🎤 **Capture**: Send any text or voice message to save facts, tasks, or ideas.\n- 🔍 **Search**: Ask \"What did I say about [topic]?\" to find information.\n- 📋 **List**: Use the \"📋 Все цели\" button to see all your records.\n- ✍️ **Edit**: Tell me which specific goal you want to update.\n\n**TONE**: Professional, organized, and proactive. Respond in the user's language (Russian), but use these technical instructions to maintain logic."
+        }
+      },
+      "id": "bf7d6018-8b7e-4449-9187-ebd16ccf3881",
+      "name": "Intelligence Assistant",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        224,
+        512
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "id": "45024683-cdc7-4ed8-a4ac-3948887c0b34",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        192,
+        736
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Bot Trigger').item.json.message.chat.id }}",
+        "text": "={{ $json.output }}",
+        "replyMarkup": "replyKeyboard",
+        "replyKeyboardOptions": {
+          "resize_keyboard": true
+        },
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "c33192c7-421d-42c5-8c62-8f0388c08847",
+      "name": "Send Response1",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        832,
+        512
+      ],
+      "webhookId": "a5756aa1-4c9c-4383-9224-5dc36d3aa899",
+      "credentials": {
+        "telegramApi": {
+          "id": "2c4s7ZfTfFBHHfYe",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "Use this tool to save and search user's personal tasks, ideas, and facts.",
+        "tableName": {
+          "__rl": true,
+          "value": "documents",
+          "mode": "list",
+          "cachedResultName": "documents"
+        },
+        "topK": 40,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1.3,
+      "position": [
+        320,
+        736
+      ],
+      "id": "613a94fd-416f-4ba4-ac38-4686c687b396",
+      "name": "Supabase Vector Store",
+      "credentials": {
+        "supabaseApi": {
+          "id": "EDux1E0r1ymKbSOS",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        400,
+        944
+      ],
+      "id": "e3f30074-3125-4b51-aa1e-e4cd6e26466b",
+      "name": "Embeddings OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "U0NXC4SF3kNxJRTH",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "ce1b9ab9-d8a6-4e72-85b8-681bfa877b49",
+                    "leftValue": "={{ $json.message.text }}",
+                    "rightValue": "/start",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "start"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "e2f08a7c-8997-4d64-a828-55d823be2fcc",
+                    "leftValue": "={{ $json.message.voice.file_id }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "exists",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "voice"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "ce01b27b-877b-4283-9c48-df77b2ad4d4f",
+                    "leftValue": "={{ $json.message.text }}",
+                    "rightValue": "/start",
+                    "operator": {
+                      "type": "string",
+                      "operation": "notEquals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "text"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "3ba7333f-0428-4708-8b2b-63180667d05c",
+                    "leftValue": "={{ $json.message.text }}",
+                    "rightValue": "list",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "String equals"
+            }
+          ]
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -704,
+        208
+      ],
+      "id": "a9f81c56-b161-4f6a-8915-2524ad247324",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "user-input-field",
+              "name": "user_input",
+              "value": "={{ $json.text || $json.message?.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        64,
+        1024
+      ],
+      "id": "fb546cde-97d0-407c-9ba5-aab67851bebd",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "operation": "transcribe",
+        "options": {
+          "language": ""
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [
+        -256,
+        384
+      ],
+      "id": "b3e5a5f0-00f9-4e70-95f3-e61e19c91d07",
+      "name": "Transcribe a recording",
+      "credentials": {
+        "openAiApi": {
+          "id": "U0NXC4SF3kNxJRTH",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "tableName": {
+          "__rl": true,
+          "value": "documents",
+          "mode": "list",
+          "cachedResultName": "documents"
+        },
+        "options": {}
+      },
+      "id": "340c7621-1659-4882-ad22-1f37c7306aaa",
+      "name": "Insert to Vector Store",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1.3,
+      "position": [
+        720,
+        -96
+      ]
+    },
+    {
+      "parameters": {
+        "textSplittingMode": "custom",
+        "options": {}
+      },
+      "id": "0d269b9f-b186-4d7c-952c-fbdb0b17d44d",
+      "name": "Document Loader",
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        816,
+        128
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "f8a56faf-7313-4182-8ef9-555234208eaf",
+      "name": "Text Splitter",
+      "type": "@n8n/n8n-nodes-langchain.textSplitterRecursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        896,
+        336
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "88bdc290-73f6-4dae-8574-a115818bfbf6",
+      "name": "Embeddings for Insert",
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        688,
+        128
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "U0NXC4SF3kNxJRTH",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "id-1",
+              "name": "pageContent",
+              "value": "={{ $json.user_input }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "2a6e219d-4291-48c7-aef2-36c9b9d6ce02",
+      "name": "Prepare Data for Insert",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        336,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Bot Trigger').item.json.message.chat.id }}",
+        "text": "👋 Welcome to your Intelligence Assistant - Your Professional Second Brain!\n\n🎯 **What I can do:**\n• 💾 Save your tasks, ideas, notes, and facts\n• 🔍 Search and retrieve your stored knowledge\n• 🧠 Provide intelligent insights from your data\n\n📝 **How to use:**\n1. Send me text or voice messages with information you want to remember\n2. Ask me questions about your stored knowledge\n3. I'll help you organize and retrieve everything\n\n✨ **Try it now:** Send me a task, idea, or fact to get started!",
+        "replyMarkup": "replyKeyboard",
+        "replyKeyboardOptions": {
+          "resize_keyboard": true
+        },
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "id": "2220cca6-abde-43e0-b611-d25bb26aad0d",
+      "name": "Send Welcome Message",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -480,
+        96
+      ],
+      "webhookId": "87a2a440-6755-4057-b36a-ad4ddb917b66",
+      "credentials": {
+        "telegramApi": {
+          "id": "2c4s7ZfTfFBHHfYe",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $json.message.voice.file_id }}",
+        "additionalFields": {}
+      },
+      "id": "b9c1f764-6f6a-4c35-8c37-7646f46294eb",
+      "name": "Download Voice File",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -480,
+        384
+      ],
+      "webhookId": "1fdfebed-d685-4615-9986-6bc91c3de42c",
+      "credentials": {
+        "telegramApi": {
+          "id": "2c4s7ZfTfFBHHfYe",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "update",
+        "tableName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "documents",
+          "cachedResultName": "documents"
+        },
+        "id": "int8",
+        "options": {}
+      },
+      "id": "03f5c7c7-aa65-400d-9a5f-e130b6af2d62",
+      "name": "Update Vector Store",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1.3,
+      "position": [
+        -464,
+        848
+      ],
+      "credentials": {
+        "supabaseApi": {
+          "id": "EDux1E0r1ymKbSOS",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "id-1",
+              "leftValue": "={{ $json.user_input }}",
+              "rightValue": "изменить",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            },
+            {
+              "id": "id-2",
+              "leftValue": "={{ $json.user_input }}",
+              "rightValue": "редактировать",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            },
+            {
+              "id": "id-3",
+              "leftValue": "={{ $json.user_input }}",
+              "rightValue": "обновить",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            },
+            {
+              "id": "id-4",
+              "leftValue": "={{ $json.user_input }}",
+              "rightValue": "edit",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            },
+            {
+              "id": "id-5",
+              "leftValue": "={{ $json.user_input }}",
+              "rightValue": "update",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "looseTypeValidation": true,
+        "options": {
+          "ignoreCase": true
+        }
+      },
+      "id": "714b933b-35ca-4fc7-a2f9-7d6813fc7c77",
+      "name": "Check Edit Intent",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -912,
+        848
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "id-1",
+              "name": "pageContent",
+              "value": "={{ $json.user_input }}",
+              "type": "string"
+            },
+            {
+              "id": "id-2",
+              "name": "metadata",
+              "value": "={{ JSON.stringify({ \"updated_at\": new Date().toISOString() }) }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "84549e4c-87ce-4cf8-87a2-f0dd44365115",
+      "name": "Prepare Data for Update",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -688,
+        848
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "5d0942e1-bdd5-4b86-829c-4f51d7144f94",
+      "name": "Merge Insert and Update",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -912,
+        624
+      ]
+    }
+  ],
+  "pinData": {
+    "Telegram Bot Trigger": [
+      {
+        "json": {
+          "update_id": 602495189,
+          "message": {
+            "message_id": 138,
+            "from": {
+              "id": 720128372,
+              "is_bot": false,
+              "first_name": "Uladzislau",
+              "last_name": "Khamionak",
+              "username": "Asher2018",
+              "language_code": "ru"
+            },
+            "chat": {
+              "id": 720128372,
+              "first_name": "Uladzislau",
+              "last_name": "Khamionak",
+              "username": "Asher2018",
+              "type": "private"
+            },
+            "date": 1772806027,
+            "text": "to change"
+          }
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Telegram Bot Trigger": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Intelligence Assistant",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Intelligence Assistant": {
+      "main": [
+        [
+          {
+            "node": "Send Response1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Send Welcome Message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Download Voice File",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Response1": {
+      "main": [
+        []
+      ]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase Vector Store": {
+      "ai_tool": [
+        [
+          {
+            "node": "Intelligence Assistant",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Check Edit Intent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcribe a recording": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Document Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Document Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Insert to Vector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings for Insert": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Insert to Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          },
+          {
+            "node": "Update Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Data for Insert": {
+      "main": [
+        [
+          {
+            "node": "Insert to Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Voice File": {
+      "main": [
+        [
+          {
+            "node": "Transcribe a recording",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Vector Store": {
+      "main": [
+        []
+      ]
+    },
+    "Check Edit Intent": {
+      "main": [
+        [
+          {
+            "node": "Prepare Data for Update",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare Data for Insert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Data for Update": {
+      "main": [
+        [
+          {
+            "node": "Update Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "58085798-1a20-49ac-ad14-a9a5746055c2",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "c6858d15cd27f50da4f3e40afb89802e90bdafcf59ac0b29c8a64a3e12233fd3"
+  },
+  "id": "8YzezyM5Ptndc7Md",
+  "tags": []
+}
